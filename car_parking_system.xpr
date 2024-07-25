@@ -1,0 +1,139 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 13.07.2024 15:28:55
+// Design Name: 
+// Module Name: car
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module car(input clk,input rst,input [1:0] pass1,input [1:0] pass2,input sensor_entr,input sensor_exit,output wire green_led,output wire red_led,output reg [6:0] HEX_1,output reg [6:0] HEX_2);
+parameter idle=0,wait_pass=1,wrong_pass=2,right_pass=3,parked=4;
+reg [2:0] state;
+reg [2:0] nstate;
+reg[31:0] counter_wait;
+reg[31:0] counter_wrong;
+reg red_temp,green_temp;
+
+
+always @(posedge clk) begin
+if(rst)
+state<=0;
+else
+state<=nstate;
+end
+
+
+always @(posedge clk) begin
+if(rst)
+counter_wait<=0;
+else if(state==wait_pass)
+counter_wait<=counter_wait+1'b1;
+else 
+counter_wait<=0;
+end
+
+
+always @(*) begin
+case(state)
+idle:begin
+if(sensor_entr==1)
+nstate=wait_pass;
+else
+nstate=idle;
+end
+
+wait_pass:begin
+if(counter_wait<=3)
+nstate=wait_pass;
+else if(pass1==2'b01 && pass2==2'b10)
+nstate=right_pass;
+else
+nstate=wrong_pass;
+end
+
+wrong_pass:begin
+if(pass1==2'b01 && pass2==2'b10)
+nstate=right_pass;
+else 
+nstate=wrong_pass;
+end
+
+right_pass:begin
+if(sensor_entr==1'b1 && sensor_exit==1'b1)
+nstate=parked;
+else if(sensor_exit==1'b1)
+nstate=idle;
+else
+nstate=right_pass;
+end
+
+parked:begin
+if(pass1==2'b01 && pass2==2'b10)
+nstate=right_pass;
+else
+nstate=parked;
+end
+
+default:nstate=idle;
+
+endcase
+end
+
+always @(posedge clk) begin
+case(state)
+idle:begin
+red_temp=1'b0;
+green_temp=1'b0;
+HEX_1 = 7'b1111111; 
+HEX_2 = 7'b1111111; 
+end
+
+wait_pass:begin
+red_temp<=1'b1;
+green_temp<=1'b0;
+HEX_1 = 7'b000_0110;
+HEX_2 = 7'b010_1011;
+end
+
+wrong_pass: begin
+green_temp = 1'b0;
+red_temp = ~red_temp;
+HEX_1 = 7'b000_0110; 
+HEX_2 = 7'b000_0110; 
+ end
+ 
+ 
+right_pass: begin
+green_temp = ~green_temp;
+red_temp = 1'b0;
+HEX_1 = 7'b000_0010; 
+HEX_2 = 7'b100_0000; 
+end
+
+parked: begin
+green_temp = 1'b0;
+red_temp = ~red_temp;
+HEX_1 = 7'b001_0010; 
+HEX_2 = 7'b000_1100; 
+end
+
+endcase
+end
+
+assign red_led=red_temp;
+assign green_led=green_temp;
+endmodule
