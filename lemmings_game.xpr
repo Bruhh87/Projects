@@ -1,0 +1,121 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 13.07.2024 18:33:13
+// Design Name: 
+// Module Name: lemmings
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module lemmings(
+    input clk,
+    input areset,    // Freshly brainwashed Lemmings walk left.
+    input bump_left,
+    input bump_right,
+    input ground,
+    input dig,
+    output walk_left,
+    output walk_right,
+    output aaah,
+    output digging ); 
+    reg [2:0] state,nstate;
+    reg [31:0] counter;
+    parameter left=0,right=1,dig_r=2,dig_l=3,fall_l=4,fall_r=5,splat=6;
+    always @(posedge clk or posedge areset)
+        begin
+            if(areset)
+                state<=left;
+            else
+                state<=nstate;
+        end
+    always @(posedge clk or posedge areset) begin
+        if(areset)
+            counter<=0;
+        else if(state==fall_l | state==fall_r)
+            counter<=counter+1'b1;
+        else 
+            counter<=0;
+    end
+    always @(*)
+        begin
+            case(state)
+                left:begin
+                    
+                    if(ground==1 & dig==1)
+                        nstate=dig_l;
+                    else if(ground==1 & bump_left==1)
+                        nstate=right;
+                    else if(ground==0)
+                        nstate=fall_l;
+                    else
+                        nstate=left;                  
+                end
+                right:begin
+                    
+                    if(ground==1 & dig==1)
+                        nstate=dig_r;
+                    else if(ground==1 & bump_right==1)
+                        nstate=left;
+                    else if(ground==0)
+                        nstate=fall_r;
+                    else
+                        nstate=right; 
+                end
+                dig_r:begin
+                    
+                    if(ground==0)
+                        nstate=fall_r;
+                    else
+                        nstate=dig_r;
+                end
+                dig_l:begin
+                    
+                    if(ground==0)
+                        nstate=fall_l;
+                    else
+                        nstate=dig_l;
+                end
+                fall_l:begin
+                    
+                    if(counter>=20 & ground==1)
+                        nstate=splat;
+                    else if(counter<20 &ground==1)
+                        nstate=left;
+                    else 
+                        nstate=fall_l;
+                end
+                fall_r:begin
+                   
+                    if(counter>=20 & ground==1)
+                        nstate=splat;
+                    else if(counter<20 &ground==1)
+                        nstate=right;
+                    else 
+                        nstate=fall_r;
+                end
+                splat:begin
+                    nstate=splat;
+                end
+            endcase
+        end
+    
+    assign walk_left=(state==splat)?0:(state==left);
+    assign walk_right=(state==splat)?0:(state==right);
+    assign aaah=(state==splat)?0:(state==fall_l || state==fall_r);
+    assign digging=(state==splat)?0:(state==dig_l || state==dig_r);
+                
+endmodule
+
