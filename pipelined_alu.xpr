@@ -1,0 +1,73 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 14.07.2024 12:25:18
+// Design Name: 
+// Module Name: alu
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module alu(input clk1,input [15:0] rs1,input [15:0] rs2,input clk2,input [3:0] func,input [3:0] rd,input [7:0] addr,output [15:0] z);
+reg [25:0] l12_a,l12_b;
+reg [15:0] l23_z,l34_z;
+reg [15:0] bank [0:15];
+reg [15:0] mem [0:255];
+reg [3:0] l12_rd,l23_rd,l12_func;
+reg [7:0] l12_addr,l23_addr,l34_addr;
+assign z=l34_z;
+
+
+always @(posedge clk1) begin
+l12_a<=bank[rs1];
+l12_b<=bank[rs2];
+l12_rd<=rd;
+l12_func<=func;
+l12_addr<=addr;
+end
+
+
+always @(negedge clk2) begin
+case(l12_func)
+0000:l23_z<=l12_a+l12_b;
+0001:l23_z<=l12_a-l12_b;
+0010:l23_z<=l12_a*l12_b;
+0011:l23_z<=l12_a;
+0100:l23_z<=l12_b;
+0101:l23_z<=l12_a&l12_b;
+0110:l23_z<=l12_a|l12_b;
+0111:l23_z<=l12_a^l12_b;
+1000:l23_z<=~l12_a;
+1001:l23_z<=~l12_b;
+1010:l23_z<=l12_a>>1;
+1011:l23_z<=l12_b>>1;
+default:l23_z<=16'hxxxx;
+endcase
+l23_rd<=l12_rd;
+l23_addr<=l12_addr;
+end
+
+
+always @(posedge clk1) begin
+bank[l23_rd]<=l23_z;
+l34_z<=l23_z;
+l34_addr<=l23_addr;
+end
+
+
+always @(negedge clk2) begin
+mem[l34_addr]<=l34_z;
+end
+endmodule
